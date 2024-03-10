@@ -8,25 +8,25 @@ struct Card {
 }
 
 fn main() -> Result<()> {
-    let conn = Connection::open("test.db")?;
+    let conn = Connection::open("tcg.db")?;
     create_tables(&conn);
-    let co = Card {
+    let card = Card {
         edition: "Dissension".to_string(),
         id: 107,
         name: "Coiling Oracle".to_string(),
         foil: true,
     };
-    update_table(&conn, co);
+    update_table(&conn, card);
     Ok(())
 }
 
 fn create_tables(connection: &Connection) {
     match connection.execute("CREATE TABLE IF NOT EXISTS MTG (
             edition     TEXT NOT NULL,
-            id      INTEGER NOT NULL,
-            name    TEXT NOT NULL,
-            foil    BLOB NOT NULL,
-            quantity INTEGER
+            id          INTEGER NOT NULL,
+            name        TEXT NOT NULL,
+            foil        BLOB NOT NULL,
+            quantity    INTEGER
         )", ()) {
             Ok(_result) => println!("Table created."),
             Err(err) => println!("Error creating table! {}", err),
@@ -58,7 +58,6 @@ fn create_in_table(connection: &Connection, card: Card) {
     };
 }
 
-fn delete_from_db(connection: &Connection, card: Card) -> Result<()>{
-
-    Ok(())
-}
+// fn delete_from_db(connection: &Connection, card: Card) -> Result<()>{
+//     Ok(())
+// }
