@@ -14,9 +14,10 @@ fn main() -> Result<()> {
         edition: "Dissension".to_string(),
         id: 107,
         name: "Coiling Oracle".to_string(),
-        foil: true,
+        foil: false,
     };
-    update_table(&conn, card);
+    //increment_card(&conn, card);
+    decrement_card(&conn, card);
     Ok(())
 }
 
@@ -33,22 +34,16 @@ fn create_tables(connection: &Connection) {
         }
 }
 
-fn update_table(connection: &Connection, card: Card){
-    let temp_edition = &card.edition;
-    let temp_name = &card.name;
-    let temp_foil = &card.foil;
-    let temp_id = &card.id;
-    match connection.query_row("SELECT quantity FROM MTG WHERE EXISTS (SELECT id FROM MTG WHERE edition = ?1 AND name = ?2 AND foil = ?3 AND id = ?4)", (temp_edition, temp_name, temp_foil, temp_id), |row| row.get::<usize, i64>(0)) {
-        Ok(num_of_card) => { println!("Card found, updating amount!");
-            match connection.execute("UPDATE MTG SET quantity = ?1 WHERE edition = ?2 AND id = ?3 AND foil = ?4", (num_of_card + 1, card.edition, card.id, card.foil)){
-                Ok(rows_updated) => println!("Rows updated: {}", rows_updated),
-                Err(err) => println!("Update table error!: {}", err)
-            }; 
-        }
-        Err(_err) => {
-            create_in_table(connection, card);
-        }
-    };
+fn increment_card(connection: &Connection, card: Card){
+    let exists = check_card_quantity(connection, &card);
+    if exists > 0{
+        match connection.execute("UPDATE MTG SET quantity = quantity + 1 WHERE edition = ?1 AND id = ?2 AND foil = ?3", (card.edition, card.id, card.foil)){
+            Ok(rows_updated) => println!("Rows updated: {}", rows_updated),
+            Err(err) => println!("Update table error!: {}", err)
+        }; 
+    } else {
+        create_in_table(connection, card);
+    }
 }
 
 fn create_in_table(connection: &Connection, card: Card) {
@@ -58,6 +53,31 @@ fn create_in_table(connection: &Connection, card: Card) {
     };
 }
 
-// fn delete_from_db(connection: &Connection, card: Card) -> Result<()>{
-//     Ok(())
-// }
+fn check_card_quantity(connection: &Connection, card: &Card) -> i64 {
+    match connection.query_row("SELECT quantity FROM MTG WHERE (edition = ?1 AND name = ?2 AND foil = ?3 AND id = ?4)", (&card.edition, &card.name, &card.foil, &card.id), |row| row.get::<usize, i64>(0)) {
+        Ok(result) => {
+            return result
+        },
+        Err(err) =>  {
+            return 0;
+        }
+    }
+}
+
+fn decrement_card(connection: &Connection, card: Card) {
+    let exists = check_card_quantity(connection, &card);
+    println!("{}",exists);
+    if exists > 1 {
+        match connection.execute("UPDATE MTG SET quantity = quantity - 1 WHERE edition = ?1 AND id = ?2 AND foil = ?3", (card.edition, card.id, card.foil)){
+            Ok(result) => println!("Update successful, {} lines updated.", result),
+            Err(err) => println!("Update failed: {}", err)
+        }
+    } else if exists <= 1 {
+        match connection.execute("DELETE FROM MTG WHERE edition = ?1 AND id = ?2 AND foil = ?3", (card.edition, card.id, card.foil)){
+            Ok(result) => println!("Deleted blank entry {} lines updated", result),
+            Err(_) => todo!(),
+        }
+    } else {
+        println!("Entry does not exist, no lines updated.");
+    }
+}
