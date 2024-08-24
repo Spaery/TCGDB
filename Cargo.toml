@@ -1,7 +1,7 @@
 [package]
 name = "tcgdb"
 version = "0.1.0"
-authors = ["Michael Bryan <michaelbryan122@gmail.com>"]
+authors = ["Spaery <spaery@spaery.io>"]
 edition = "2018"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -9,3 +9,4 @@ edition = "2018"
 [dependencies]
 csv = "1.3.0"
 rusqlite = { version = "0.31.0", features = ["bundled"] }
+reqwest = { version = "0.12.7", features= ["blocking"] }
