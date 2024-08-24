@@ -16,7 +16,8 @@ fn main() -> Result<()> {
     let mut card = MagicCard::new("Black Lotus", 1, "Alpha", "LP");
 
     // Insert the card into the database
-    decrement_card(&conn, &mtgtable, &card);
+    increment_card(&conn, &mtgtable, &card);
+    update_prices(&conn, &mtgtable, &card, 12.00);
     Ok(())
 }
 
@@ -29,7 +30,7 @@ fn create_table<T: Table>(connection: &Connection, table: &T) {
 }
 
 
-fn check_card_quantity<T:Table, C: Card>(connection: &Connection, table: &T, card: &C) -> i64 {
+fn check_card_quantity<T: Table, C: Card>(connection: &Connection, table: &T, card: &C) -> i64 {
     let sql_query = format!("SELECT quantity FROM {} WHERE {}", table.get_table_name(), table.get_match_fields());
     match connection.query_row(&sql_query, (card.get_set(),card.get_id(),card.get_foil(),card.get_condition()), |row| row.get::<usize, i64>(0)) {
         Ok(result) => {
@@ -41,7 +42,7 @@ fn check_card_quantity<T:Table, C: Card>(connection: &Connection, table: &T, car
     }
 }
 
-fn increment_card<T:Table, C: Card>(connection: &Connection, table: &T, card: &C) {
+fn increment_card<T: Table, C: Card>(connection: &Connection, table: &T, card: &C) {
     let exists = check_card_quantity(connection, table, card);
     if exists > 0 {
         let sql_query = format! ("UPDATE {} SET quantity = quantity + 1 WHERE {}", table.get_table_name(), table.get_match_fields());
@@ -54,7 +55,7 @@ fn increment_card<T:Table, C: Card>(connection: &Connection, table: &T, card: &C
     }
 }
 
-fn decrement_card<T:Table, C: Card>(connection: &Connection, table: &T, card: &C) {
+fn decrement_card<T: Table, C: Card>(connection: &Connection, table: &T, card: &C) {
     let exists = check_card_quantity(connection, table, card);
     println!("{}",exists);
     if exists > 1 {
@@ -74,10 +75,32 @@ fn decrement_card<T:Table, C: Card>(connection: &Connection, table: &T, card: &C
     }
 }
 
-fn create_in_table<T:Table, C: Card>(connection: &Connection, table: &T, card: &C) {
+fn create_in_table<T: Table, C: Card>(connection: &Connection, table: &T, card: &C) {
     let sql_query = format!("INSERT INTO {} VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)", table.get_table_name());
     match connection.execute(&sql_query,( card.get_set(),card.get_id(), card.get_name(), card.get_foil(), 1, card.get_condition(), 0, 0)) {
         Ok(_result) => println!("Created card entry in table"),
         Err(err) => println!("Entry creation error: {}",err)
     };
+}
+
+fn update_prices<T: Table, C: Card>(connection: &Connection, table: &T, card: &C, tcgmarket: f64) {
+    let sql_query = format!("UPDATE {} SET tcgmarket = ?5, instore = ?6 WHERE {}", table.get_table_name(), table.get_match_fields());
+    let condition = card.get_condition();
+    let markup = get_markup(condition);
+    let instore = tcgmarket * markup;
+    match connection.execute(&sql_query, (card.get_set(), card.get_id(), card.get_foil(), card.get_condition(),tcgmarket, instore)) {
+        Ok(result) => println!("Updated prices for card: {}", result),
+        Err(err) => println!("Error updating prices: {}", err)
+    }
+}
+
+fn get_markup(condition: &str) -> f64 {
+    match condition {
+        "NM" => mtg::NM_CARD_MARKUP,
+        "LP" => mtg::LP_CARD_MARKUP,
+        "MP" => mtg::MP_CARD_MARKUP,
+        "HP" => mtg::HP_CARD_MARKUP,
+        "DAMAGED" => mtg::DAMAGED_CARD_MARKUP,
+        _ => mtg::DEFAULT_CARD_MARKUP, // Default markup for unknown conditions
+    }
 }

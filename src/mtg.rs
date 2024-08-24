@@ -1,9 +1,9 @@
-const DEFAULT_CARD_MARKUP: f64 = 0.0;
-const NM_CARD_MARKUP: f64 = 0.0;
-const LP_CARD_MARKUP: f64 = 0.0;
-const MP_CARD_MARKUP: f64 = 0.0;
-const HP_CARD_MARKUP: f64 = 0.0;
-const DAMAGED_CARD_MARKUP: f64 = 0.0;
+pub const DEFAULT_CARD_MARKUP: f64 = 1.0;
+pub const NM_CARD_MARKUP: f64 = 1.0;
+pub const LP_CARD_MARKUP: f64 = 0.9;
+pub const MP_CARD_MARKUP: f64 = 1.0;
+pub const HP_CARD_MARKUP: f64 = 1.0;
+pub const DAMAGED_CARD_MARKUP: f64 = 1.0;
 
 pub const MTG_TABLE_FIELDS: &str =
 "edition     TEXT NOT NULL,
